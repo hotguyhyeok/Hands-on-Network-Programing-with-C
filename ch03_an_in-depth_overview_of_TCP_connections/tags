@@ -1,0 +1,4 @@
+CLOSESOCKET	./platform.h	/^#define CLOSESOCKET(s) closesocket(s) $/
+GETSOCKETERRNO	./platform.h	/^#define GETSOCKETERRNO() (WSAGetLastErro()) $/
+ISVALIDSOCKET	./platform.h	/^#define ISVALIDSOCKET(s) ((s) != INVALID_SOCKET) $/
+Mtcp_client	./tcp_client.c	/^int main(int argc, char **argv) {$/
