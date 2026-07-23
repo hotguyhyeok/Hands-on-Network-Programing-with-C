@@ -66,8 +66,8 @@ int main() {
 
 
     SOCKET i;
-    for (i=0; i <= max_socket; ++i) { // File Discriptor 0(stdin)~max_socket 순회
-                                      // select()는 이벤트가 발생했는지 여부를 플래그로 표시할 뿐, 이벤트 발생지점을 찾는건 사용자 몫. 현재 코드는 O(n) 시간복잡도. (select()는 커널 내부에서도 전체를 스캔하는 방식으로 동작)
+    for (i=0; i <= max_socket; ++i) { // select()는 이벤트가 발생했는지 여부를 플래그로 표시할 뿐, 이벤트 발생지점을 찾는건 사용자 몫. 현재 코드는 O(n) 시간복잡도.
+                                      // select()는 커널 내부에서도 전체를 스캔하는 방식으로 동작
                                       // 개선하기 위해선 epoll 을 사용(on unix-like)하거나 소켓들을 관리하는 별도의 배열(또는 구조체)을 선언하는 방법 등이 있음.
       if (FD_ISSET(i, &reads)) {
 
@@ -101,9 +101,14 @@ int main() {
           continue;
         }
 
-        for (int j=0; j < bytes_received; ++j)
-          read[j] = toupper(read[j]);
-        send(i, read, bytes_received, 0);
+          SOCKET j;
+          for (j=0; j <= max_socket; ++j) {
+            if (FD_ISSET(j, &master)) {
+              if (j == socket_listen || j == i) continue; // we check that it's not the listening socket and check that it's not the same socket that sent the data in the first place.
+              else send(j, read, bytes_received, 0);
+            }
+          }
+
         }
 
       } // if FD_ISSET
@@ -127,6 +132,7 @@ int main() {
 
 // SERVER'S OUTPUT EXAMPLE
 //
+//./tcp_serve_chat                                                             ok
 // Configuring local address...
 // Creating socket...
 // Bindind socket to local address...
@@ -137,18 +143,34 @@ int main() {
 // ^C
 
 
-// CLIENT'S OUTPUT EXAMPLE
+
+// CLIENT1 OUTPUT EXAMPLE
 //
+//./tcp_client 127.0.0.1 8080                                                  ok
 // Configuring remote address...
 // Remote address is: 127.0.0.1 http-alt
 // Creating socket...
 // Connecting...
 // Connected.
 // To send data, enter text followed by enter.
-// Hello World!
-// Sending: Hello World!
+// Received (13 bytes): hello World!
+// Hi
+// Sending: Hi
+// Sent 3 bytes.
+// ^C
+
+
+// CLIENT2 OUTPUT EXAMPLE
+//
+// ./tcp_client 127.0.0.1 8080                                                  ok
+// Configuring remote address...
+// Remote address is: 127.0.0.1 http-alt
+// Creating socket...
+// Connecting...
+// Connected.
+// To send data, enter text followed by enter.
+// hello World!
+// Sending: hello World!
 // Sent 13 bytes.
-// Received (13 bytes): HELLO WORLD!
-// Connection closed by peer.
-// Closing socket...
-// Finished.
+// Received (3 bytes): Hi
+// ^C
